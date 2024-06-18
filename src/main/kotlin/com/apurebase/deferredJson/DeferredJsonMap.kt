@@ -73,7 +73,7 @@ public class DeferredJsonMap internal constructor(
 
     @Suppress("SuspendFunctionOnCoroutineScope")
     public suspend fun deferredLaunch(block: suspend DeferredJsonMap.() -> Unit): Unit = mjLock.withLock {
-        moreJobs.add(async(job, LAZY) {
+        moreJobs.add(async(currentCoroutineContext(), LAZY) {
             block(this@DeferredJsonMap)
         })
     }

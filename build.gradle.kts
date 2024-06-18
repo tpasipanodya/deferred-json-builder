@@ -1,13 +1,10 @@
-import de.marcphilipp.gradle.nexus.NexusPublishPlugin
 import org.jetbrains.dokka.Platform
-import java.time.Duration
 
 plugins {
     kotlin("jvm") version "1.5.10"
     id("com.github.ben-manes.versions") version "0.39.0"
-    id("io.codearte.nexus-staging") version "0.30.0"
-    id("de.marcphilipp.nexus-publish") version "0.4.0"
     id("org.jetbrains.dokka") version "1.4.32"
+    id("maven-publish")
     signing
 }
 repositories {
@@ -20,11 +17,9 @@ val coroutinesVersion: String by project
 val serializationVersion: String by project
 val kluentVersion: String by project
 val junitVersion: String by project
-val sonatypeUsername: String? = System.getenv("sonatypeUsername")
-val sonatypePassword: String? = System.getenv("sonatypePassword")
 
-group = "com.apurebase"
-version = libVersion
+group = "io.taff"
+version = "$libVersion${if (isReleaseBuild()) "" else "-SNAPSHOT"}"
 
 kotlin {
     explicitApi()
@@ -48,12 +43,6 @@ tasks {
     wrapper {
         distributionType = Wrapper.DistributionType.ALL
     }
-    closeRepository {
-        mustRunAfter(subprojects.map { it.tasks.getByName("publishToSonatype") }.toTypedArray())
-    }
-    closeAndReleaseRepository {
-        mustRunAfter(subprojects.map { it.tasks.getByName("publishToSonatype") }.toTypedArray())
-    }
     dokkaHtml {
         outputDirectory.set(buildDir.resolve("javadoc"))
         dokkaSourceSets {
@@ -67,21 +56,6 @@ tasks {
 }
 
 
-apply<NexusPublishPlugin>()
-
-nexusPublishing {
-    repositories { sonatype() }
-    clientTimeout.set(Duration.parse("PT10M"))
-}
-
-nexusStaging {
-    packageGroup = "com.apurebase"
-    username = sonatypeUsername
-    password = sonatypePassword
-    numberOfRetries = 360 // 1 hour if 10 seconds delay
-    delayBetweenRetriesInMillis = 10000 // 10 seconds
-}
-
 val sourcesJar by tasks.creating(Jar::class) {
     classifier = "sources"
     from(sourceSets.main.get().allSource)
@@ -94,37 +68,48 @@ val dokkaJar by tasks.creating(Jar::class) {
 }
 
 publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/tpasipanodya/deferred-json-builder")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+
     publications {
         create<MavenPublication>("maven") {
             artifactId = project.name
             from(components["java"])
             artifact(sourcesJar)
             artifact(dokkaJar)
+
             pom {
                 name.set("Deferred JSON Builder")
                 description.set("Deferred JSON Builder is a coroutine based pattern to split the fields and field value computation execution for generating JSON objects")
-                url.set("https://github.com/aPureBase/DeferredJsonBuilder")
-                organization {
-                    name.set("aPureBase")
-                    url.set("https://apurebase.com/")
-                }
+                url.set("https://github.com/tpasipanodya/deferred-json-builder")
+
                 licenses {
                     license {
                         name.set("MIT License")
-                        url.set("https://github.com/aPureBase/DeferredJsonBuilder/blob/master/LICENSE")
+                        url.set("https://github.com/tpasipanodya/deferred-json-builder/blob/master/LICENSE")
                     }
                 }
+
                 developers {
                     developer {
-                        id.set("jeggy")
-                        name.set("Jógvan Olsen")
-                        email.set("jol@apurebase.com")
+                        id.set("pasitaf")
+                        name.set("Tafadzwa Pasipanodya")
+                        email.set("tmpasipanodya@gmail.com")
                     }
                 }
+
                 scm {
-                    connection.set("scm:git:https://github.com/aPureBase/DeferredJsonBuilder.git")
-                    developerConnection.set("scm:git:https://github.com/aPureBase/DeferredJsonBuilder.git")
-                    url.set("https://github.com/aPureBase/DeferredJsonBuilder/")
+                    connection.set("scm:git:https://github.com/tpasipanodya/deferred-json-builder.git")
+                    developerConnection.set("scm:git:https://github.com/tpasipanodya/deferred-json-builder.git")
+                    url.set("https://github.com/tpasipanodya/deferred-json-builder/")
                     tag.set("HEAD")
                 }
             }
@@ -132,11 +117,4 @@ publishing {
     }
 }
 
-signing {
-    isRequired = !version.toString().endsWith("SNAPSHOT")
-    useInMemoryPgpKeys(
-        System.getenv("ORG_GRADLE_PROJECT_signingKey"),
-        System.getenv("ORG_GRADLE_PROJECT_signingPassword")
-    )
-    sign(publishing.publications["maven"])
-}
+fun isReleaseBuild() = System.getenv("IS_RELEASE_BUILD")?.toBoolean() == true
