@@ -1,5 +1,8 @@
 # Deferred JSON Builder
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.apurebase/DeferredJsonBuilder.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.apurebase%22%20AND%20a:%22DeferredJsonBuilder%22)
+[Git Hub Packages](https://github.com/tpasipanodya/deferred-json-builder/packages/2182759)
 
-Deferred JSON Builder is a coroutine based pattern to split the fields and field value computation execution for generating JSON objects
+Deferred JSON Builder is a tool for building JSON objects concurrently by assembling their fields via coroutines.
+Unlike [aPureBase's original implementation](https://github.com/aPureBase/DeferredJsonBuilder), this fork allows
+you to propagate select Coroutine context elements across all Coroutines. An example use-case for this
+is propagating `ThreadLocalContextElement` that are required for use in data fetching operations.

@@ -11,12 +11,14 @@ import kotlin.coroutines.CoroutineContext
 
 @Suppress("SuspendFunctionOnCoroutineScope")
 public class DeferredJsonArray internal constructor(
-    ctx: CoroutineContext
+    ctx: CoroutineContext,
+    propagateables: List<CoroutineContext.Element>
 ): CoroutineScope, Mutex by Mutex() {
 
     private val job = Job()
     override val coroutineContext: CoroutineContext = ctx + job
 
+    private val propagateables = propagateables
     private val deferredArray = mutableListOf<Deferred<JsonElement>>()
     private var completedArray: List<JsonElement>? = null
 
@@ -29,13 +31,13 @@ public class DeferredJsonArray internal constructor(
     }
 
     public suspend fun addDeferredObj(block: suspend DeferredJsonMap.() -> Unit) {
-        val map = DeferredJsonMap(job)
+        val map = DeferredJsonMap(job, propagateables)
         block(map)
         addDeferredValue(async(job, LAZY) { map.awaitAndBuild() })
     }
 
     public suspend fun addDeferredArray(block: suspend DeferredJsonArray.() -> Unit) {
-        val array = DeferredJsonArray(job)
+        val array = DeferredJsonArray(job, propagateables)
         block(array)
         addDeferredValue(array.asDeferred())
     }

@@ -10,10 +10,12 @@ import kotlin.coroutines.CoroutineContext
 
 public class DeferredJsonMap internal constructor(
     ctx: CoroutineContext,
+    propagateables: List<CoroutineContext.Element>
 ): CoroutineScope {
 
     internal val job = Job()
     override val coroutineContext: CoroutineContext = ctx + job
+    private val propagateables = propagateables
 
     private val dmLock = Mutex()
     private val deferredMap = mutableMapOf<String, Deferred<JsonElement>>()
@@ -36,7 +38,7 @@ public class DeferredJsonMap internal constructor(
         val mapToUse = uddmLock.withLock {
             val map = unDefinedDeferredMap[this]
             if (map == null) {
-                val newMap = DeferredJsonMap(job)
+                val newMap = DeferredJsonMap(job, propagateables)
                 unDefinedDeferredMap[this] = newMap
                 newMap
             } else map
@@ -45,7 +47,7 @@ public class DeferredJsonMap internal constructor(
     }
 
     public suspend infix fun String.toDeferredArray(block: suspend DeferredJsonArray.() -> Unit) {
-        val array = DeferredJsonArray(job)
+        val array = DeferredJsonArray(job, propagateables)
         block(array)
         this@toDeferredArray toDeferredValue array.asDeferred()
     }
@@ -73,7 +75,8 @@ public class DeferredJsonMap internal constructor(
 
     @Suppress("SuspendFunctionOnCoroutineScope")
     public suspend fun deferredLaunch(block: suspend DeferredJsonMap.() -> Unit): Unit = mjLock.withLock {
-        moreJobs.add(async(job, LAZY) {
+
+        moreJobs.add(async(propagateables.fold(job, CoroutineContext::plus), LAZY) {
             block(this@DeferredJsonMap)
         })
     }
