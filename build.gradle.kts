@@ -1,9 +1,9 @@
 import org.jetbrains.dokka.Platform
 
 plugins {
-    kotlin("jvm") version "1.5.10"
-    id("com.github.ben-manes.versions") version "0.39.0"
-    id("org.jetbrains.dokka") version "1.4.32"
+    kotlin("jvm") version "2.0.0"
+    id("com.github.ben-manes.versions") version "0.51.0"
+    id("org.jetbrains.dokka") version "1.9.20"
     id("maven-publish")
     signing
 }
