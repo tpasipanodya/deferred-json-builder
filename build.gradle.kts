@@ -46,7 +46,7 @@ tasks {
         outputDirectory.set(buildDir.resolve("javadoc"))
         dokkaSourceSets {
             configureEach {
-                jdkVersion.set(8)
+                jdkVersion.set(20)
                 reportUndocumented.set(true)
                 platform.set(Platform.jvm)
             }
