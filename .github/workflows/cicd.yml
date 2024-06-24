@@ -1,25 +1,36 @@
-name: Maven Publish
-
+name: "CI & CD"
 on:
-  release:
-    types:
-      - released
-
+  push:
+    tags:
+      - '*'
 jobs:
-  maven-publish:
+  CI-CD:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      checks: write
+      packages: write
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Java
+        uses: actions/setup-java@v3
         with:
-          java-version: 1.8
-      - name: Publish
-        uses: eskatos/gradle-command-action@v1
-        with:
-          gradle-version: 7.0.2
-          arguments: publish
+          java-version: 20
+          distribution: zulu
+      - name: Build & Deploy
+        uses: gradle/gradle-build-action@v3.4.2
         env:
-          sonatypeUsername: ${{ secrets.SONATYPE_USERNAME }}
-          sonatypePassword: ${{ secrets.SONATYPE_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGKEY }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGPASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IS_RELEASE_BUILD: true
+        with:
+          gradle-version: 8.4
+          arguments: clean test build publish  --stacktrace
+      - name: Upload Test Results
+        uses: dorny/test-reporter@v1.6.0
+        if: success() || failure()
+        with:
+          name: Test Results
+          path: build/test-results/test/*.xml
+          reporter: java-junit
