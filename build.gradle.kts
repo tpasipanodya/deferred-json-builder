@@ -9,7 +9,6 @@ plugins {
 }
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 val libVersion: String by project
@@ -57,13 +56,13 @@ tasks {
 
 
 val sourcesJar by tasks.creating(Jar::class) {
-    classifier = "sources"
+    archiveClassifier.set("sources")
     from(sourceSets.main.get().allSource)
 }
 
 val dokkaJar by tasks.creating(Jar::class) {
     group = JavaBasePlugin.DOCUMENTATION_GROUP
-    classifier = "javadoc"
+    archiveClassifier.set("javadoc")
     from(tasks.dokkaHtml)
 }
 
