@@ -7,7 +7,7 @@ import kotlin.coroutines.CoroutineContext
 
 public fun CoroutineScope.deferredJsonBuilder(
     timeout: Long? = null,
-    propagateables: List<CoroutineContext.Element> = listOf(),
+    propagateables: List<() -> CoroutineContext.Element> = listOf(),
     init: suspend DeferredJsonMap.() -> Unit,
 
     ): Deferred<JsonObject> = async {
