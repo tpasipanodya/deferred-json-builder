@@ -12,7 +12,7 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("SuspendFunctionOnCoroutineScope")
 public class DeferredJsonArray internal constructor(
     ctx: CoroutineContext,
-    propagateables: List<CoroutineContext.Element>
+    propagateables: List<() -> CoroutineContext.Element>
 ): CoroutineScope, Mutex by Mutex() {
 
     private val job = Job()

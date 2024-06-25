@@ -10,7 +10,7 @@ import kotlin.coroutines.CoroutineContext
 
 public class DeferredJsonMap internal constructor(
     ctx: CoroutineContext,
-    propagateables: List<CoroutineContext.Element>
+    propagateables: List<() -> CoroutineContext.Element>
 ): CoroutineScope {
 
     internal val job = Job()
@@ -75,10 +75,9 @@ public class DeferredJsonMap internal constructor(
 
     @Suppress("SuspendFunctionOnCoroutineScope")
     public suspend fun deferredLaunch(block: suspend DeferredJsonMap.() -> Unit): Unit = mjLock.withLock {
-
-        moreJobs.add(async(propagateables.fold(job, CoroutineContext::plus), LAZY) {
-            block(this@DeferredJsonMap)
-        })
+        val initial: CoroutineContext = job
+        val asyncContext = propagateables.fold(initial) { sum, curr -> sum + curr() }
+        moreJobs.add(async(asyncContext, LAZY) { block(this@DeferredJsonMap) })
     }
 
     private fun build(): JsonObject {
